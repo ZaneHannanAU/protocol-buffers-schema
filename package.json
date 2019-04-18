@@ -1,18 +1,16 @@
 {
-  "name": "protocol-buffers-schema",
-  "version": "3.3.2",
+  "name": "protocol-buffers-schema-ts",
+  "version": "4.0.0",
   "description": "No nonsense protocol buffers schema parser written in Javascript",
-  "main": "index.js",
-  "devDependencies": {
-    "standard": "^10.0.3",
-    "tape": "^4.8.0"
-  },
+  "main": "lib/parse",
   "scripts": {
-    "test": "standard && tape test/*.js"
+    "build": "[ -d lib ] && rm -r lib; [ -f tsconfig.tsbuildinfo ] && rm tsconfig.tsbuildinfo; mkdir -p lib && tsc && for i in lib/*.js; do mv \"$i\" \"lib/$(basename \"$i\" .js).mjs\"; done && tsc -m commonjs",
+    "test": "node lib/test # && node --experimental-modules lib/test",
+    "build-test": "npm run build && npm run test"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/mafintosh/protocol-buffers-schema"
+    "url": "https://github.com/ZaneHannanAU/protocol-buffers-schema"
   },
   "keywords": [
     "protobuf",
@@ -22,10 +20,14 @@
     "parser",
     "parse"
   ],
-  "author": "Mathias Buus",
+  "author": "zeen3",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/mafintosh/protocol-buffers-schema/issues"
+    "url": "https://github.com/ZaneHannanAU/protocol-buffers-schema/issues"
   },
-  "homepage": "https://github.com/mafintosh/protocol-buffers-schema"
+  "homepage": "https://github.com/ZaneHannanAU/protocol-buffers-schema",
+  "devDependencies": {
+    "@types/node": "^11.13.5",
+    "typescript": "^3.4.3"
+  }
 }
