@@ -45,4 +45,4 @@ async function tests() {
 	}
 }
 
-tests().catch(console.error).finally(console.groupEnd)
+tests().catch(console.error).then(console.groupEnd)
