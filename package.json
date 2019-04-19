@@ -1,6 +1,6 @@
 {
   "name": "protocol-buffers-schema-ts",
-  "version": "4.0.2",
+  "version": "4.0.3",
   "description": "No nonsense protocol buffers schema parser written in Javascript",
   "types": "lib/parse",
   "main": "lib/parse",
