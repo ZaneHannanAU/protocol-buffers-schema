@@ -1,7 +1,7 @@
 {
   "name": "protocol-buffers-schema-ts",
   "version": "4.0.4",
-  "description": "No nonsense protocol buffers schema parser written in Javascript",
+  "description": "No nonsense protocol buffers schema parser written in Typescript",
   "types": "lib/parse",
   "main": "lib/parse",
   "scripts": {
