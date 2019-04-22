@@ -6,7 +6,9 @@ No nonsense [protocol buffers](https://developers.google.com/protocol-buffers) s
 npm install protocol-buffers-schema-ts
 ```
 <p align=center>
-[![build status](https://travis-ci.com/ZaneHannanAU/protocol-buffers-schema.svg?branch=master)](http://travis-ci.org/ZaneHannanAU/protocol-buffers-schema) [![npm version](https://img.shields.io/npm/v/protocol-buffers-schema-ts.svg)](https://npmjs.org/package/protocol-buffers-schema-ts) [![downloads](https://img.shields.io/npm/dm/protobufjs.svg)](https://img.shields.io/npm/dm/protobufjs.svg)
+<a href="http://travis-ci.org/ZaneHannanAU/protocol-buffers-schema" target=_blank><img alt="build status" src="https://travis-ci.com/ZaneHannanAU/protocol-buffers-schema.svg?branch=master" width=90 height=20></a>
+<a href="https://www.npmjs.org/package/protocol-buffers-schema-ts" target=_blank><img alt="npm version" src="https://img.shields.io/npm/v/protocol-buffers-schema-ts.svg" width=80 height=20></a>
+<a href="https://img.shields.io/npm/dm/protobufjs.svg"><img alt="downloads" src="https://img.shields.io/npm/dm/protocol-buffers-schema-ts.svg" width=140 height=20></a>
 </p>
 
 ## Usage
