@@ -1,7 +1,21 @@
 import { tokenise } from "./tokenise";
-import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, LookupIn } from "./parser-internals";
+import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, LookupIn, Enum, Message, Extends } from "./parser-internals";
 import { Schema } from "./schema";
-export const exported_interfaces = new WeakMap<Schema, Lookup>()
+export { Schema } from "./schema";
+const exported_lookups = new WeakMap<Schema, Lookup>();
+export function find_lookup(s: Schema, name: string, is: "enum"): Enum
+export function find_lookup(s: Schema, name: string, is: "message"):Message
+export function find_lookup(s: Schema, name: string, is: "extends"): Extends
+export function find_lookup(schema: Schema, fname: string, fis: "enum" | "message" | "extends") {
+	if (!schema.package) throw new SyntaxError(`cannot take schemas without a package name`)
+	let v = exported_lookups.get(schema)!
+	.find(({is, name}) => is === fis && fname === name)!
+	switch (fis) {
+		case "enum": return v.value as Enum;
+		case "message": return v.value as Message;
+		case "extends": return v.value as Extends;
+	}
+}
 interface ToString {toString(): string;}
 export function parse<T extends ToString>(from: T) {
 	const schema = new Schema
@@ -72,7 +86,7 @@ export function parse<T extends ToString>(from: T) {
 			name: `${schema.package}.${name}`,
 			is, value
 		})
-		exported_interfaces.set(schema, exported)
+		exported_lookups.set(schema, exported)
 	}
 	return schema
 }

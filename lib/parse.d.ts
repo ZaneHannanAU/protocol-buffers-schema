@@ -1,6 +1,9 @@
-import { LookupIn } from "./parser-internals";
+import { Enum, Message, Extends } from "./parser-internals";
 import { Schema } from "./schema";
-export declare const exported_interfaces: WeakMap<Schema, LookupIn<"message" | "enum" | "extends">[]>;
+export { Schema } from "./schema";
+export declare function find_lookup(s: Schema, name: string, is: "enum"): Enum;
+export declare function find_lookup(s: Schema, name: string, is: "message"): Message;
+export declare function find_lookup(s: Schema, name: string, is: "extends"): Extends;
 interface ToString {
     toString(): string;
 }
