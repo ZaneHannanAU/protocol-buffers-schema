@@ -55,7 +55,7 @@ The run the following example
 
 ```typescript
 import { readFileSync } from 'fs';
-import { parse } from 'protocol-buffers-schema-ts';
+import { parse } from 'protocol-buffers-schema-ts/lib/parse';
 
 // pass a buffer or string (implements Object.toString()) to schema.parse.
 var sch = parse(readFileSync('example.proto'))
