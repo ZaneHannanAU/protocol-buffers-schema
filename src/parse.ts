@@ -1,11 +1,12 @@
 import { tokenise } from "./tokenise";
 import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, LookupIn } from "./parser-internals";
 import { Schema } from "./schema";
-
+export const exported_interfaces = new WeakMap<Schema, Lookup>()
 interface ToString {toString(): string;}
 export function parse<T extends ToString>(from: T) {
 	const schema = new Schema
 	const lu: Lookup = []
+	const exported: Lookup = [];
 	schema_parse: {
 		const tc = new TokenCount(Object.freeze(tokenise(from.toString())))
 		while (!tc.done) switch (tc.peek()) {
@@ -65,6 +66,13 @@ export function parse<T extends ToString>(from: T) {
 		else if (schema.enums.some(en => en.name === field.type)) continue;
 
 		throw new SyntaxError(`Fields of type ${field.type} cannot be declared [packed=true]. Only repeated fields of primitive numeric types (types which use the varint, 32-bit, or 64-bit wire types) can be declared as "packed". See https://developers.google.com/protocol-buffers/docs/encoding#optional`)
+	}
+	if (schema.package) {
+		for (const {name, is, value} of lu) exported.push({
+			name: `${schema.package}.${name}`,
+			is, value
+		})
+		exported_interfaces.set(schema, exported)
 	}
 	return schema
 }
