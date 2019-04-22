@@ -1,6 +1,6 @@
-# protocol-buffers-schema
+# protocol-buffers-schema-ts
 
-No nonsense [protocol buffers](https://developers.google.com/protocol-buffers) schema parser written in Typescript
+No nonsense [protocol buffers](https://developers.google.com/protocol-buffers) schema parser written in Typescript.
 
 ``` js
 npm install protocol-buffers-schema-ts
@@ -8,7 +8,7 @@ npm install protocol-buffers-schema-ts
 <p align=center>
 <a href="http://travis-ci.org/ZaneHannanAU/protocol-buffers-schema" target=_blank><img alt="build status" src="https://travis-ci.com/ZaneHannanAU/protocol-buffers-schema.svg?branch=master" width=90 height=20></a>
 <a href="https://www.npmjs.org/package/protocol-buffers-schema-ts" target=_blank><img alt="npm version" src="https://img.shields.io/npm/v/protocol-buffers-schema-ts.svg" width=80 height=20></a>
-<a href="https://img.shields.io/npm/dm/protobufjs.svg"><img alt="downloads" src="https://img.shields.io/npm/dm/protocol-buffers-schema-ts.svg" width=140 height=20></a>
+<a href="https://www.npmjs.org/package/protocol-buffers-schema-ts" target=_blank><img alt="downloads" src="https://img.shields.io/npm/dm/protocol-buffers-schema-ts.svg" width=140 height=20></a>
 </p>
 
 ## Usage
@@ -53,7 +53,7 @@ service ServiceName {
 }
 ```
 
-The run the following example
+Then, run the example:
 
 ```typescript
 import { readFileSync } from 'fs';
@@ -113,3 +113,5 @@ MIT
 Testing is currently done in an automated fashion in [`lib/test`](./lib/test.mjs), relying on files in the [`test/fixtures/`](./test/fixtures/) directory.
 
 Testing should be done both in the browser and in node, for various purposes.
+
+Updating of properties would inherently include updating of test/fixtures.
