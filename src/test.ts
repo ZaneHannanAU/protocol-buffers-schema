@@ -28,6 +28,7 @@ const will_error: {[s: string]: Error} = {
 async function tests() {
 	let dir = await read_dir('test/fixtures')
 
+	console.group('Running tests')
 	for (const file of new Set(dir.map(v => basename(basename(v, '.json'), '.proto')))) {
 		console.group(file)
 		if (file in will_error) {
@@ -51,7 +52,10 @@ async function tests() {
 	}
 }
 
-tests().catch(e => {
+tests().then(() => {
+	console.groupEnd()
+	process.exit(0)
+}, e => {
 	console.error(e)
 	process.exit(1)
-}).finally(console.groupEnd)
+})
