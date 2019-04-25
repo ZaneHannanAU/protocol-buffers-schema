@@ -22,6 +22,17 @@ export const PACKABLE_TYPES = Object.freeze([
 	// 32-bit wire types
 	'fixed32', 'sfixed32', 'float'
 ])
+export const MAP_TYPES = Object.freeze([
+	// varint wire types
+	'int32', 'int64', 'uint32', 'uint64', 'sint32', 'sint64', 'bool',
+	// + ENUMS
+	// 64-bit wire types
+	'fixed64', 'sfixed64',
+	// 32-bit wire types
+	'fixed32', 'sfixed32',
+	// length-delimited type
+	'string'
+])
 export type NameMappedValueMap = Map<string, string>;
 const parse_bool = <T extends Options>(m: T, s: string, n: TokenCount) => {
 	if (m.options.has(s)) switch (m.options.get(s)) {
@@ -312,12 +323,6 @@ export function on_enum<T extends Enums>({enums}: T, n: TokenCount, l: Lookup) {
 			enums.push(en)
 			l.push({name: en.name, is: 'enum', value: en})
 			return en;
-		case 'enum':
-			{
-				const e = on_enum(en, n, l);
-				l.push({name: `${en.name}.${e.name}`, is: 'enum', value: en})
-			}
-			break;
 		default:
 			on_enum_value(en, n)
 	}
@@ -342,6 +347,7 @@ export function on_message<T extends Messages>({messages}: T, c: TokenCount, l: 
 			c.next()
 			if (!--lvl) {
 				messages.push(m);
+				l.push({name: m.name, is: "message", value: m})
 				return m
 			}
 			break;

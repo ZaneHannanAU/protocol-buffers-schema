@@ -1,5 +1,5 @@
 import { tokenise } from "./tokenise";
-import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, Enum, Message, Extends } from "./parser-internals";
+import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, Enum, Message, Extends, MAP_TYPES } from "./parser-internals";
 import { Schema } from "./schema";
 export { Schema } from "./schema";
 const exported_lookups = new WeakMap<Schema, Lookup>();
@@ -48,7 +48,13 @@ export function parse<T extends ToString>(from: T) {
 			default: throw new SyntaxError(`Unexpected token: ${tc.next()}`)
 		}
 	}
-
+	schema_map_types: for (const {value} of lu) {
+		if (value instanceof Message || value instanceof Extends) for (const field of (value instanceof Message ? value.fields : value.msg.fields)) if (field.map) {
+			if (MAP_TYPES.includes(field.map.from) ||
+				find_lookup(schema, field.map.from, "enum")) continue
+			throw new SyntaxError(`Fields of type map cannot use ${field.map.from} as a key value, please use an enum, integer, or string type (${MAP_TYPES.join(', ')} + enum)`)
+		}
+	}
 	schema_extend: for (const ext of schema.extends) for (const msg of schema.messages) if (msg.name === ext.name) for (const field of ext.msg.fields) {
 		if (!msg.extensions || field.tag < msg.extensions.from || field.tag > msg.extensions.to)
 			throw new ReferenceError(`${msg.name} does not declare ${field.tag} as an extension number`)
