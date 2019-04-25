@@ -1,0 +1,8 @@
+syntax = "proto3";
+message Free {
+    required string jeez = 0;
+}
+message AMap {
+    map<string, int32> hello = 1;
+    map<Free, uint32> bye = 2;
+}
