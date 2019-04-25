@@ -29,6 +29,7 @@ const will_error: {[s: string]: Error} = {
 		message: `Fields of type map cannot use Free as a key value, please use an enum, integer, or string type (int32, int64, uint32, uint64, sint32, sint64, bool, fixed64, sfixed64, fixed32, sfixed32, string + enum)`
 	}
 }
+const verbose = process.argv.includes('--verbose')
 async function main() {
 	let dir = await read_dir('test/fixtures')
 	let tests = 0
@@ -47,11 +48,13 @@ async function main() {
 			}
 		} else {
 			const {json, schema} = await fixtures(file)
-			let pj = schema.toJSON()
-			console.dir(schema, {depth: null})
-			console.dir(json, {depth: null})
-			deep_strict_equal(json, pj)
-			console.log(schema.toString())
+			let schema_json = schema.toJSON()
+			deep_strict_equal(json, schema_json)
+			if (verbose) {
+				console.dir(schema, {depth: null})
+				console.dir(json, {depth: null})
+				console.log(schema.toString())
+			} else console.log('passed required tests')
 		}
 		console.groupEnd()
 	}
