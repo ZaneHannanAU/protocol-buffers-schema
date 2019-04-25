@@ -11,12 +11,13 @@ export interface LookupIn<T extends keyof LookupIs> {
 }
 export declare type Lookup = LookupIn<keyof LookupIs>[];
 export declare const PACKABLE_TYPES: readonly string[];
-export declare const MAP_TYPES: readonly string[];
+export declare const MAP_KEY_TYPES: readonly string[];
 export declare type NameMappedValueMap = Map<string, string>;
 export interface OptionsJSON {
     [s: string]: string | OptionsJSON;
 }
 export declare class Options {
+    parse_bool(name: string): true | false | null;
     readonly options: NameMappedValueMap;
     static intoJSON(opts: NameMappedValueMap): OptionsJSON;
     toJSON(): any;
@@ -73,8 +74,10 @@ export interface Messages {
 export declare function on_message<T extends Messages>({ messages }: T, c: TokenCount, l: Lookup): Message;
 export declare class Extends extends Options {
     name: string;
-    msg: Message;
-    constructor(name: string, msg: Message);
+    messages: Message[];
+    enums: Enum[];
+    fields: MessageField[];
+    constructor(name: string);
 }
 interface Extendss {
     extends: Extends[];
@@ -101,7 +104,7 @@ export declare class TokenCount {
     l: number;
     done: boolean;
     constructor(tokens: readonly string[]);
-    assert(name: string, ...tks: string[]): true;
+    assert(name: string, next: string, ...further: string[]): true;
     peek(n?: number): string;
     next(n?: number): string;
     syntax_err(str: string): never;

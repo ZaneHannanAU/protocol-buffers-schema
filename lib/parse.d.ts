@@ -4,6 +4,9 @@ export { Schema } from "./schema";
 export declare function find_lookup(s: Schema, name: string, is: "enum"): Enum | undefined;
 export declare function find_lookup(s: Schema, name: string, is: "message"): Message | undefined;
 export declare function find_lookup(s: Schema, name: string, is: "extends"): Extends | undefined;
+export declare function find_lookups(s: Schema, is: "enum"): IterableIterator<Enum>;
+export declare function find_lookups(s: Schema, is: "message"): IterableIterator<Message>;
+export declare function find_lookups(s: Schema, is: "extends"): IterableIterator<Extends>;
 interface ToString {
     toString(): string;
 }
