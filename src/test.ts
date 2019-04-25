@@ -18,7 +18,7 @@ const fixtures = async (p: string) => {
 const will_error: {[s: string]: Error} = {
 	'no-tags': {
 		name: "SyntaxError",
-		message: "Missing tag number in message field: dollars"
+		message: "tag assignment must follow field name [around token 6 \";\"]"
 	},
 	'pheromon-trajectories': {
 		name: "SyntaxError",
