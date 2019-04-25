@@ -16,7 +16,7 @@ ${this.package && `package ${this.package};`
 }${this.imports.reduce((a, i) => a + `\nimport "${i}";`, '')
 }${onOptions(this)
 }${onEnums(this)
-}${this.extends.reduce((a, v) => a + `\nextend ${v.name} {${indent(onFields(v.msg.fields))}\n}`, '')
+}${this.extends.reduce((a, v) => a + `\nextend ${v.name} {${indent(onFields(v.fields))}\n}`, '')
 }${onMessages(this)
 }${onServices(this)}`
 	}
