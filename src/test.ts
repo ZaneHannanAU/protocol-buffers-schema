@@ -25,11 +25,12 @@ const will_error: {[s: string]: Error} = {
 		message: "Fields of type bytes cannot be declared \[packed=true\]. Only repeated fields of primitive numeric types (types which use the varint, 32-bit, or 64-bit wire types) can be declared as \"packed\". See https:\/\/developers.google.com\/protocol-buffers\/docs\/encoding\#optional"
 	}
 }
-async function tests() {
+async function main() {
 	let dir = await read_dir('test/fixtures')
-
+	let tests = 0
 	console.group('Running tests')
 	for (const file of new Set(dir.map(v => basename(basename(v, '.json'), '.proto')))) {
+		tests++
 		console.group(file)
 		if (file in will_error) {
 			let err: Error | null = null, rp: Promise<Schema> | null = null;
@@ -50,12 +51,14 @@ async function tests() {
 		}
 		console.groupEnd()
 	}
+	return tests
 }
 
-tests().then(() => {
+Promise.resolve().then(main).then(tests => {
+	console.info('Passed %d tests successfully; exiting...', tests)
 	console.groupEnd()
-	process.exit(0)
+	setImmediate(process.exit, 0)
 }, e => {
 	console.error(e)
-	process.exit(1)
+	setImmediate(process.exit, 1)
 })
