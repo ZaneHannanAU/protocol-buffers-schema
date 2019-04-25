@@ -16,10 +16,15 @@ export declare type NameMappedValueMap = Map<string, string>;
 export interface OptionsJSON {
     [s: string]: string | OptionsJSON;
 }
+export interface ReadonlyOptionsJSON {
+    readonly [s: string]: string | ReadonlyOptionsJSON;
+}
 export declare class Options {
     parse_bool(name: string): true | false | null;
+    get_option(name: string): string | undefined;
     readonly options: NameMappedValueMap;
     static intoJSON(opts: NameMappedValueMap): OptionsJSON;
+    options_as_object(): ReadonlyOptionsJSON;
     toJSON(): any;
 }
 export declare class MessageField extends Options {
