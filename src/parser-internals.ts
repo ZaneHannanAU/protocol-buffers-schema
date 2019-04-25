@@ -22,7 +22,7 @@ export const PACKABLE_TYPES = Object.freeze([
 	// 32-bit wire types
 	'fixed32', 'sfixed32', 'float'
 ])
-export const MAP_TYPES = Object.freeze([
+export const MAP_KEY_TYPES = Object.freeze([
 	// varint wire types
 	'int32', 'int64', 'uint32', 'uint64', 'sint32', 'sint64', 'bool',
 	// + ENUMS
@@ -43,9 +43,17 @@ const parse_bool = <T extends Options>(m: T, s: string, n: TokenCount) => {
 	return false;
 }
 const opts_wm = new WeakMap<Options, NameMappedValueMap>();
-const $emptyarray = Object.freeze([])
+const $emptyarray = Object.freeze([]),
+	$emptyobject = Object.freeze({})
 export interface OptionsJSON {[s: string]: string | OptionsJSON;}
 export class Options {
+	parse_bool(name: string): true | false | null {
+		if (opts_wm.has(this)) switch (opts_wm.get(this)!.get(name)) {
+			case "true": return true;
+			case "false": return false;
+		}
+		return null
+	}
 	get options(): NameMappedValueMap {
 		let m = opts_wm.get(this);
 		if (!m) {
@@ -95,7 +103,7 @@ export class Options {
 		}
 		if (opts_wm.has(this))
 			return {...j, options: Options.intoJSON(opts_wm.get(this)!)}
-		else return {...j, options: {}}
+		else return {...j, options: $emptyobject}
 	}
 }
 export class MessageField extends Options {
@@ -114,10 +122,27 @@ interface MessageFields {fields: MessageField[]}
 function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 	const field: MessageField = new MessageField;
 	while (!c.done) switch (c.peek()) {
-		case '=':
-			field.tag = Number(c.next(2));
+		//@ts-ignore
+		case 'repeated':
+		//@ts-ignore
+		case 'required':
+		//@ts-ignore
+		case 'optional':
+			{
+				let t = c.next();
+				field.required = t === 'required'
+				field.repeated = t === 'repeated'
+				field.optional = t === 'optional'
+			}
+			if (c.peek() === 'map') c.syntax_err('map type cannot be prefixed by required or repeated or optional')
+
+		default:
+			field.type = c.next()
+			field.name = c.next()
+			if (c.peek() !== '=') c.syntax_err('tag assignment must follow field name')
 			break
 
+		//@ts-ignore
 		case 'map':
 			field.type = c.assert('map type', 'map', '<') && 'map';
 			field.map = {
@@ -125,25 +150,20 @@ function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 				to: c.assert('map type', ',') && c.next()
 			};
 			field.name = c.assert('map type', '>') && c.next();
-			break;
+			if (c.peek() !== '=') c.syntax_err('map name must be followed by a tag assignment')
 
-		case 'repeated':
-		case 'required':
-		case 'optional':
-			{
-				let t = c.next();
-				field.required = t === 'required'
-				field.repeated = t === 'repeated'
-				field.type = c.next()
-				field.name = c.next()
-			}
-			break
+		//@ts-ignore
+		case '=':
+			field.tag = Number(c.next(2));
+			if (c.peek() === ';') break
+			else if (c.peek() !== '[') c.syntax_err('field tag must be followed by options or end of field')
 
+		//@ts-ignore
 		case '[':
 			on_inline_options(field, c);
 			field.packed = parse_bool(field, "packed", c)
 			field.deprecated = parse_bool(field, "deprecated", c)
-			break;
+			if (c.peek() !== ';') c.syntax_err('field must end with semicolon')
 
 		case ';':
 			if (field.name === '')
@@ -153,38 +173,40 @@ function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 			if (field.tag === -1)
 				throw new SyntaxError(`Missing tag number in message field: ${field.name}`)
 			fields.push(field)
-			c.next()
+			c.assert('field ends with semicolon', ';')
 			return field;
-
-		default:
-			field.type = c.next()
-			field.name = c.next()
-			break
 	}
 
-	throw new Error('No ; found for message field')
+	throw new Error('No ; found to close message field')
 }
 function on_inline_options<T extends Options>({options}: T, c: TokenCount) {
 	while (!c.done) switch (c.peek()) {
+		//@ts-ignore
 		case '[':
+		//@ts-ignore
 		case ',': {
 			let name = c.next(2);
 			if (name === '(') {
 				name = c.next();
-				c.next()
+				c.assert('parentheses closed name', ')')
 			}
-			c.assert('inline options', '=')
-			if (c.peek() === ']')
-				throw new SyntaxError(`Unexpected ] in field option in ${name}`);
+			if (c.peek()[0] === '.') name += c.next()
+			c.assert('inline options assignment', '=')
+			if (c.peek() === ']') c.syntax_err(`Unexpected ] in field option in ${name}`);
 			let value = c.next();
+			if (value === '{') {
+				value = '{}'
+				on_map_options(options, name, c)
+			}
 			options.set(name, value);
 		}
-		break
+		if (c.peek() === ',') break
+		else if (c.peek() !== ']') c.syntax_err('inline options must close or continue after a value')
 		case ']':
-			c.next()
+			c.assert('inline options close', ']')
 			return;
 		default:
-			c.assert('field options', '')
+			c.syntax_err('field options has no closing tag')
 	}
 
 	throw new SyntaxError('No closing tag for field options');
@@ -193,7 +215,7 @@ function on_inline_options<T extends Options>({options}: T, c: TokenCount) {
 
 export function on_package_name(schema: Schema, t: TokenCount) {
 	schema.package = t.next(2);
-	t.assert('package name', ';')
+	t.assert('package name closing semicolon', ';')
 	return schema.package
 }
 
@@ -202,12 +224,12 @@ export function on_syntax_version(schema: Schema, n: TokenCount) {
 	switch (n.next()) {
 		case '"proto2"':
 		case "'proto2'":
-			n.assert("syntax version", ";");
+			n.assert("syntax version closing semicolon", ";");
 			schema.syntax = 2;
 			return 2;
 		case '"proto3"':
 		case "'proto3'":
-			n.assert("syntax version", ";");
+			n.assert("syntax version closing semicolon", ";");
 			schema.syntax = 3;
 			return 3;
 	}
@@ -298,7 +320,11 @@ function on_enum_value({values}: Enum, n: TokenCount) {
 		default: {
 			let name = n.next()
 			n.assert('enum value', '=')
-			let value = +n.next();
+			let value = Number.parseInt(n.next(), 10);
+			if (isNaN(value)) n.syntax_err(`Enum value with name ${name} must not be NaN`)
+			if (value > 0x7f_ff_ff_ff) n.syntax_err(`Enum value must not be greater than 32 bit signed integer limit`)
+			value |= 0
+			if (value < 0) n.syntax_err(`Enum value must be greater than or equal to 0`)
 			let ret = new EnumValue(name, value);
 			if (n.peek() === '[') on_inline_options(ret, n);
 			n.assert('enum value', ';')
@@ -312,7 +338,7 @@ function on_enum_value({values}: Enum, n: TokenCount) {
 export interface Enums {enums: Enum[]};
 export function on_enum<T extends Enums>({enums}: T, n: TokenCount, l: Lookup) {
 	const en: Enum = new Enum(n.next(2))
-	n.next()
+	n.assert('next is opening bracket', '{')
 	while (!n.done) switch (n.peek()) {
 		case 'option':
 			on_option(en, n);
@@ -343,14 +369,6 @@ export function on_message<T extends Messages>({messages}: T, c: TokenCount, l: 
 	let lvl = 0
 	while (!c.done) switch (c.peek()) {
 		case '{': ++lvl; c.next(); break;
-		case '}':
-			c.next()
-			if (!--lvl) {
-				messages.push(m);
-				l.push({name: m.name, is: "message", value: m})
-				return m
-			}
-			break;
 		case 'map': case 'required': case 'optional': case 'repeated':
 			on_field(m, c); break;
 		case 'enum': {
@@ -377,23 +395,34 @@ export function on_message<T extends Messages>({messages}: T, c: TokenCount, l: 
 		break
 		case 'extend': on_extend(m, c, l); break;
 		case ';': c.next(); break;
-		case 'reserved': case 'option':
+		case 'reserved':
 			do c.next();
 			while (c.peek() !== ';');
 			break;
+		case 'option':
+			on_option(m, c)
+			break
 
 		default: on_field(m, c).optional = true; break;
+		case '}':
+			c.next()
+			if (!--lvl) {
+				messages.push(m);
+				l.push({name: m.name, is: "message", value: m})
+				return m
+			}
+			break;
 	}
 	throw new SyntaxError(`message was not closed before token completion of file`)
 }
 function on_extensions(m: Message, c: TokenCount) {
-	const from = +c.next(2)
+	const from = Number.parseInt(c.next(2), 10)
 	if (isNaN(from))
 		c.syntax_err(`Invalid "from" value in extensions definition`)
 
 	if (c.next() !== 'to') c.syntax_err("Expected keyword 'to' in extensions definition")
 	let sto = c.next()
-	const to = sto === 'max' ? MAX_RANGE : +sto
+	const to = sto === 'max' ? MAX_RANGE : Number.parseInt(sto, 10)
 	if (isNaN(to))
 		c.syntax_err(`Invalid "to" value in extensions definition`)
 
@@ -402,11 +431,20 @@ function on_extensions(m: Message, c: TokenCount) {
 	m.extensions = {from, to}
 }
 export class Extends extends Options {
-	constructor(public name: string, public msg: Message) {super()}
+	messages: Message[] = []
+	enums: Enum[] = []
+	fields: MessageField[] = []
+	constructor(public name: string) {super()}
 }
 interface Extendss {extends: Extends[]}
 export function on_extend<T extends Extendss>({extends: ex}: T, c: TokenCount, l: Lookup) {
-	let e = new Extends(c.peek(1), on_message({messages: []}, c, l))
+	let e = new Extends(c.peek(1))
+	const msg = on_message({messages: []}, c, l)
+	if (msg.extends.length) c.syntax_err(`Cannot use an extends operator inside an extend key`)
+	if (msg.extensions) c.syntax_err(`Cannot set extensions on an extend key`)
+	e.messages.push(...msg.messages)
+	e.fields.push(...msg.fields)
+	e.enums.push(...msg.enums)
 	ex.push(e)
 	l.push({name: e.name, is: "extends", value: e} as LookupIn<'extends'>)
 	return e
@@ -430,22 +468,23 @@ export class Service extends Options {
 }
 export function on_service({services}: Schema, c: TokenCount) {
 	const serv = new Service(c.next(2))
-	c.assert('service', '{')
+	c.assert('service open', '{')
 
 	while (!c.done) switch (c.peek()) {
+		case 'option':
+			on_option(serv, c);
+			break;
+
+		//@ts-ignore
+		case 'rpc':
+			on_rpc(serv, c);
+			if (c.peek() !== '}') break;
+
 		case '}':
 			c.next();
 			if (c.peek() === ';') c.next();
 			services.push(serv);
 			return;
-
-		case 'option':
-			on_option(serv, c);
-			break;
-
-		case 'rpc':
-			on_rpc(serv, c);
-			break;
 	}
 }
 function on_rpc({methods}: Service, c: TokenCount) {
@@ -465,22 +504,23 @@ function on_rpc({methods}: Service, c: TokenCount) {
 	}
 	rpc.output_type = c.next()
 	c.assert("RPC", ')')
-	if (c.peek() === '{') while (!c.done) switch (c.peek()) {
-		case '}':
-			if (c.assert('rpc close', '}') && c.peek() === ';') c.next()
-			methods.push(rpc)
-			return rpc
-
+	while (!c.done) switch (c.peek()) {
+		//@ts-ignore fallthroughCaseInSwitch
 		case '{':
 			c.assert('rpc option open', '{')
-			break
+			if (c.peek() === '}') break
+			else if (c.peek() !== 'option') c.syntax_err(`rpc options must be followed by closing or option tag`)
+		//@ts-ignore fallthroughCaseInSwitch
 		case 'option':
 			on_option(rpc, c);
-			break;
-	} else if (c.peek() === ';') {
-		c.next();
-		methods.push(rpc);
-		return rpc
+			if (c.peek() === 'option') break
+		//@ts-ignore fallthroughCaseInSwitch
+		case '}':
+			c.assert('rpc options close', '}')
+		case ';':
+			if (c.peek() === ';') c.next()
+			methods.push(rpc);
+			return rpc
 	}
 	throw new Error('No closing tag for rpc')
 }
@@ -493,8 +533,8 @@ export class TokenCount {
 		this.l = tokens.length
 		this.done = this.l === 0
 	}
-	assert(name: string, ...tks: string[]): true {
-		for (const tk of tks) if (tk !== this.next()) this.syntax_err(`Unexpected ${name} token: ${this.peek(-1)} (expected ${tk})`)
+	assert(name: string, next: string, ...further: string[]): true {
+		for (const tk of [next, ...further]) if (tk !== this.next()) this.syntax_err(`Unexpected ${name} token: ${this.peek(-1)} (expected ${tk})`)
 		return true
 	}
 	peek(n = 0) {

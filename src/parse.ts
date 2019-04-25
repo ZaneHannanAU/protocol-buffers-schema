@@ -1,5 +1,5 @@
 import { tokenise } from "./tokenise";
-import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, Enum, Message, Extends, MAP_TYPES } from "./parser-internals";
+import { PACKABLE_TYPES, TokenCount, on_syntax_version, on_package_name, on_enum, on_message, on_option, on_import, on_extend, on_service, Lookup, Enum, Message, Extends, MAP_KEY_TYPES } from "./parser-internals";
 import { Schema } from "./schema";
 export { Schema } from "./schema";
 const exported_lookups = new WeakMap<Schema, Lookup>();
@@ -15,6 +15,14 @@ export function find_lookup(schema: Schema, fname: string, fis: "enum" | "messag
 		case "message": return v.value as Message;
 		case "extends": return v.value as Extends;
 	}
+}
+export function find_lookups(s: Schema, is: "enum"): IterableIterator<Enum>
+export function find_lookups(s: Schema, is: "message"): IterableIterator<Message>
+export function find_lookups(s: Schema, is: "extends"): IterableIterator<Extends>
+export function* find_lookups(schema: Schema, fis: "enum" | "message" | "extends") {
+	let prev = new WeakSet
+	for (const {is, value} of exported_lookups.get(schema)!)
+		if (is === fis && !prev.has(value)) {prev.add(value); yield value}
 }
 interface ToString {toString(): string;}
 export function parse<T extends ToString>(from: T) {
@@ -48,20 +56,20 @@ export function parse<T extends ToString>(from: T) {
 			default: throw new SyntaxError(`Unexpected token: ${tc.next()}`)
 		}
 	}
-	schema_map_types: for (const {value} of lu) {
-		if (value instanceof Message || value instanceof Extends) for (const field of (value instanceof Message ? value.fields : value.msg.fields)) if (field.map) {
-			if (MAP_TYPES.includes(field.map.from) ||
+	map_types: for (const {value} of lu) {
+		if (value instanceof Message || value instanceof Extends) for (const field of value.fields) if (field.map) {
+			if (MAP_KEY_TYPES.includes(field.map.from) ||
 				find_lookup(schema, field.map.from, "enum")) continue
-			throw new SyntaxError(`Fields of type map cannot use ${field.map.from} as a key value, please use an enum, integer, or string type (${MAP_TYPES.join(', ')} + enum)`)
+			throw new SyntaxError(`Fields of type map cannot use ${field.map.from} as a key value, please use an enum, integer, or string type (${MAP_KEY_TYPES.join(', ')} + enum)`)
 		}
 	}
-	schema_extend: for (const ext of schema.extends) for (const msg of schema.messages) if (msg.name === ext.name) for (const field of ext.msg.fields) {
+	extend: for (const ext of schema.extends) for (const msg of schema.messages) if (msg.name === ext.name) for (const field of ext.fields) {
 		if (!msg.extensions || field.tag < msg.extensions.from || field.tag > msg.extensions.to)
 			throw new ReferenceError(`${msg.name} does not declare ${field.tag} as an extension number`)
 
 		msg.fields.push(field)
 	}
-	schema_pack: for (const msg of schema.messages) for (const field of msg.fields) if (field.packed && !PACKABLE_TYPES.includes(field.type)) {
+	packed: for (const msg of find_lookups(schema, "message")) for (const field of msg.fields) if (field.packed && !PACKABLE_TYPES.includes(field.type)) {
 		// check enum type
 		let type = find_lookup(schema, field.type, "enum")
 		if (type) continue
