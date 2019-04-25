@@ -46,7 +46,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         }
       ],
@@ -95,7 +95,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         }
       ],
@@ -118,7 +118,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {
             "default": "\"https://example.com\""
           }

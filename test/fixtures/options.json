@@ -20,7 +20,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {
             "mylist": "\"some,values,[here]\""
           }
@@ -45,7 +45,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {
             "mylist2": "'[more, values], [here]'"
           }

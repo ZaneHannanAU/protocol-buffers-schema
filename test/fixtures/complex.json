@@ -67,7 +67,7 @@
               "repeated": false,
               "deprecated": false,
               "packed": false,
-              "optional": false,
+              "optional": true,
               "options": {
                 "default": "HOME"
               }
@@ -114,7 +114,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         },
         {

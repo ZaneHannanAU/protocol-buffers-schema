@@ -33,7 +33,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         },
         {
@@ -59,7 +59,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         },
         {
@@ -72,7 +72,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         }
       ],
@@ -108,7 +108,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         },
         {
@@ -134,7 +134,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         },
         {
@@ -147,7 +147,7 @@
           "repeated": false,
           "deprecated": false,
           "packed": false,
-          "optional": false,
+          "optional": true,
           "options": {}
         }
       ],
@@ -161,42 +161,36 @@
   "extends": [
     {
       "name": "MsgExtend",
-      "msg": {
-        "name": "MsgExtend",
-        "enums": [],
-        "extends": [],
-        "messages": [],
-        "fields": [
-          {
-            "name": "exField1",
-            "type": "int32",
-            "tag": 101,
-            "map": null,
-            "oneof": "",
-            "required": false,
-            "repeated": false,
-            "deprecated": false,
-            "packed": false,
-            "optional": false,
-            "options": {}
-          },
-          {
-            "name": "exField2",
-            "type": "string",
-            "tag": 102,
-            "map": null,
-            "oneof": "",
-            "required": false,
-            "repeated": false,
-            "deprecated": false,
-            "packed": false,
-            "optional": false,
-            "options": {}
-          }
-        ],
-        "extensions": null,
-        "options": {}
-      },
+      "messages": [],
+      "enums": [],
+      "fields": [
+        {
+          "name": "exField1",
+          "type": "int32",
+          "tag": 101,
+          "map": null,
+          "oneof": "",
+          "required": false,
+          "repeated": false,
+          "deprecated": false,
+          "packed": false,
+          "optional": true,
+          "options": {}
+        },
+        {
+          "name": "exField2",
+          "type": "string",
+          "tag": 102,
+          "map": null,
+          "oneof": "",
+          "required": false,
+          "repeated": false,
+          "deprecated": false,
+          "packed": false,
+          "optional": true,
+          "options": {}
+        }
+      ],
       "options": {}
     }
   ],
