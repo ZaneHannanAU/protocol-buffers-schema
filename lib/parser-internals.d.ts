@@ -11,6 +11,7 @@ export interface LookupIn<T extends keyof LookupIs> {
 }
 export declare type Lookup = LookupIn<keyof LookupIs>[];
 export declare const PACKABLE_TYPES: readonly string[];
+export declare const MAP_TYPES: readonly string[];
 export declare type NameMappedValueMap = Map<string, string>;
 export interface OptionsJSON {
     [s: string]: string | OptionsJSON;
