@@ -96,6 +96,7 @@ export function parse<T extends ToString>(from: T) {
 	if (schema.package) {
 		const exp: Lookup = []
 		for (const {is, value, name} of lu) if (
+			// top-level lookup only
 			schema.enums.includes(value as Enum)
 			|| schema.messages.includes(value as Message)
 			|| schema.extends.includes(value as Extends)

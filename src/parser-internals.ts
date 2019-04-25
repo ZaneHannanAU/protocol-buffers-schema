@@ -10,7 +10,7 @@ export interface LookupIn<T extends keyof LookupIs> {
 	value: LookupIs[T];
 }
 export type Lookup = LookupIn<keyof LookupIs>[];
-const MAX_RANGE = 0x1FFFFFFF;
+const MAX_RANGE = 0x1F_FF_FF_FF;
 
 // "Only repeated fields of primitive numeric types (types which use the varint, 32-bit, or 64-bit wire types) can be declared "packed"."
 export const PACKABLE_TYPES = Object.freeze([
@@ -34,25 +34,33 @@ export const MAP_KEY_TYPES = Object.freeze([
 	'string'
 ])
 export type NameMappedValueMap = Map<string, string>;
-const parse_bool = <T extends Options>(m: T, s: string, n: TokenCount) => {
-	if (m.options.has(s)) switch (m.options.get(s)) {
-		case "true": return true;
-		case "false": return false;
-		default: n.syntax_err(`Cannot convert value of ${s} (${m.options.get(s)}) to boolean`)
-	}
-	return false;
-}
 const opts_wm = new WeakMap<Options, NameMappedValueMap>();
-const $emptyarray = Object.freeze([]),
-	$emptyobject = Object.freeze({})
+
 export interface OptionsJSON {[s: string]: string | OptionsJSON;}
+export interface ReadonlyOptionsJSON {
+	readonly [s: string]: string | ReadonlyOptionsJSON;
+}
+
+const $emptyarray = Object.freeze([]),
+	$emptyobject: ReadonlyOptionsJSON = Object.freeze({})
+
+function freeze_deeply(obj: OptionsJSON) {
+	for (const key in obj)
+		if (typeof obj[key] === 'object')
+			freeze_deeply(obj[key] as OptionsJSON)
+	return Object.freeze(obj) as ReadonlyOptionsJSON
+}
 export class Options {
 	parse_bool(name: string): true | false | null {
-		if (opts_wm.has(this)) switch (opts_wm.get(this)!.get(name)) {
+		switch (this.get_option(name)) {
 			case "true": return true;
 			case "false": return false;
+			case undefined: return null;
 		}
 		return null
+	}
+	get_option(name: string): string | undefined {
+		return opts_wm.has(this) ? opts_wm.get(this)!.get(name) : undefined
 	}
 	get options(): NameMappedValueMap {
 		let m = opts_wm.get(this);
@@ -67,9 +75,11 @@ export class Options {
 		for (const [k, v] of Array.from(opts).sort())
 			if (v === '{}') {
 				let c = o as OptionsJSON
-				for (const v of k.split('.')) c = (
-					'object' === typeof c[v] ? c[v] as OptionsJSON : (c[v] = {})
-				);
+				for (const ke of k.split('.')) switch (typeof c[ke]) {
+					case 'object': c = c[ke] as OptionsJSON; break;
+					case 'string': throw new SyntaxError('bad key for string');
+					case 'undefined': c = (c[ke] = {});
+				}
 			} else if (k.includes('.')) {
 				let c = o
 				let kv = k.split('.')
@@ -82,6 +92,11 @@ export class Options {
 				c[last] = v
 			} else o[k] = v;
 		return o
+	}
+	options_as_object() {
+		if (opts_wm.has(this))
+			return freeze_deeply(Options.intoJSON(opts_wm.get(this)!))
+		return $emptyobject
 	}
 	toJSON() {
 		const j: Exclude<any, 'options'> = {}
@@ -101,9 +116,7 @@ export class Options {
 				)
 			}
 		}
-		if (opts_wm.has(this))
-			return {...j, options: Options.intoJSON(opts_wm.get(this)!)}
-		else return {...j, options: $emptyobject}
+		return {...j, options: this.options_as_object()}
 	}
 }
 export class MessageField extends Options {
@@ -122,11 +135,8 @@ interface MessageFields {fields: MessageField[]}
 function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 	const field: MessageField = new MessageField;
 	while (!c.done) switch (c.peek()) {
-		//@ts-ignore
 		case 'repeated':
-		//@ts-ignore
 		case 'required':
-		//@ts-ignore
 		case 'optional':
 			{
 				let t = c.next();
@@ -135,14 +145,8 @@ function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 				field.optional = t === 'optional'
 			}
 			if (c.peek() === 'map') c.syntax_err('map type cannot be prefixed by required or repeated or optional')
-
-		default:
-			field.type = c.next()
-			field.name = c.next()
-			if (c.peek() !== '=') c.syntax_err('tag assignment must follow field name')
 			break
 
-		//@ts-ignore
 		case 'map':
 			field.type = c.assert('map type', 'map', '<') && 'map';
 			field.map = {
@@ -151,27 +155,37 @@ function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 			};
 			field.name = c.assert('map type', '>') && c.next();
 			if (c.peek() !== '=') c.syntax_err('map name must be followed by a tag assignment')
+			break
+
+		//@ts-ignore
+		default:
+			field.type = c.next()
+			field.name = c.next()
+			if (c.peek() !== '=') c.syntax_err('tag assignment must follow field name')
 
 		//@ts-ignore
 		case '=':
-			field.tag = Number(c.next(2));
+			field.tag = Number.parseInt(c.next(2), 10);
+			if (Number.isNaN(field.tag) || field.tag < 0 || field.tag > MAX_RANGE)
+				c.syntax_err(`Invalid tag number in message field: ${field.name}, got ${field.tag}`)
 			if (c.peek() === ';') break
 			else if (c.peek() !== '[') c.syntax_err('field tag must be followed by options or end of field')
 
 		//@ts-ignore
 		case '[':
 			on_inline_options(field, c);
-			field.packed = parse_bool(field, "packed", c)
-			field.deprecated = parse_bool(field, "deprecated", c)
+			if (field.parse_bool("packed")) field.packed = true
+			if (field.parse_bool("deprecated")) field.deprecated = true
 			if (c.peek() !== ';') c.syntax_err('field must end with semicolon')
 
 		case ';':
 			if (field.name === '')
-				throw new SyntaxError('Missing field name');
+				c.syntax_err('Missing field name');
 			if (field.type === '')
-				throw new SyntaxError(`Missing type in message field: ${field.name}`)
+				c.syntax_err(`Missing type in message field: ${field.name}`)
 			if (field.tag === -1)
-				throw new SyntaxError(`Missing tag number in message field: ${field.name}`)
+				c.syntax_err(`Missing tag number in message field: ${field.name}`)
+			field.tag >>>= 0
 			fields.push(field)
 			c.assert('field ends with semicolon', ';')
 			return field;
@@ -181,7 +195,6 @@ function on_field<T extends MessageFields>({fields}: T, c: TokenCount) {
 }
 function on_inline_options<T extends Options>({options}: T, c: TokenCount) {
 	while (!c.done) switch (c.peek()) {
-		//@ts-ignore
 		case '[':
 		//@ts-ignore
 		case ',': {
@@ -321,13 +334,13 @@ function on_enum_value({values}: Enum, n: TokenCount) {
 			let name = n.next()
 			n.assert('enum value', '=')
 			let value = Number.parseInt(n.next(), 10);
-			if (isNaN(value)) n.syntax_err(`Enum value with name ${name} must not be NaN`)
-			if (value > 0x7f_ff_ff_ff) n.syntax_err(`Enum value must not be greater than 32 bit signed integer limit`)
+			if (isNaN(value)) n.syntax_err(`Enum value with name ${name} must not parse as NaN, original is ${n.peek(-1)}`)
+			if (value > 0x7f_ff_ff_ff) n.syntax_err(`Enum value must not be greater than the 32 bit signed integer limit`)
 			value |= 0
 			if (value < 0) n.syntax_err(`Enum value must be greater than or equal to 0`)
 			let ret = new EnumValue(name, value);
 			if (n.peek() === '[') on_inline_options(ret, n);
-			n.assert('enum value', ';')
+			n.assert('enum value closing semicolon', ';')
 
 			values.push(ret)
 			return ret
@@ -342,7 +355,7 @@ export function on_enum<T extends Enums>({enums}: T, n: TokenCount, l: Lookup) {
 	while (!n.done) switch (n.peek()) {
 		case 'option':
 			on_option(en, n);
-			en.allow_alias = parse_bool(en, "allow_alias", n);
+			if (en.parse_bool("allow_alias")) en.allow_alias = true;
 			break;
 		case '}':
 			n.next(n.peek(0) === ';' ? 2 : 1)
