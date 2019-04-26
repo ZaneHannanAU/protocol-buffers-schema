@@ -6,7 +6,7 @@
   "types": "lib/parse",
   "main": "lib/parse",
   "scripts": {
-    "build": "[ -d lib ] && rm -r lib; [ -f tsconfig.tsbuildinfo ] && rm tsconfig.tsbuildinfo; mkdir -p lib && tsc && for i in lib/*.js; do sed -e 's/from \"\\(.\\/[a-z-]*\\)\"/from \"\\1.mjs\"/g' -e \"s/from '\\(.\\/[a-z-]*\\)'/from '\\1.mjs'/g\" -e \"s/\\(\\/\\/#sourceMappingURL=$(basename \"$i\")\\).js.map/\\1.mjs.map/g\" -i \"$i\" && mv \"$i\" \"lib/$(basename \"$i\" .js).mjs\" && echo \"did ${i} -> lib/$(basename \"$i\" .js).mjs\"; done && for i in lib/*.js.map; do mv \"$i\" \"lib/$(basename \"$i\" .js.map).mjs.map\" && echo \"mv $i lib/$(basename \"$i\" .js.map).mjs.map\"; done && tsc -m commonjs && rm lib/test-esm.js*",
+    "build": "[ -d lib ] && rm -r lib; [ -f tsconfig.tsbuildinfo ] && rm tsconfig.tsbuildinfo; mkdir -p lib && tsc && for i in lib/*.js; do sed -e 's/from \"\\(.\\/[a-z-]*\\)\"/from \"\\1.mjs\"/g' -e \"s/from '\\(.\\/[a-z-]*\\)'/from '\\1.mjs'/g\" -e \"s/\\(\\/\\/ #sourceMappingURL=$(basename \"$i\")\\).js.map/\\1.mjs.map/g\" -i \"$i\" && mv \"$i\" \"lib/$(basename \"$i\" .js).mjs\" && echo \"did ${i} -> lib/$(basename \"$i\" .js).mjs\"; done && for i in lib/*.js.map; do mv \"$i\" \"lib/$(basename \"$i\" .js.map).mjs.map\" && echo \"mv $i lib/$(basename \"$i\" .js.map).mjs.map\"; done && tsc -m commonjs && rm lib/test-esm.js*",
     "test": "node lib/test.js && node --experimental-modules lib/test.mjs && ( [ $(node -v) '>' 'v12.0.0' ] || [ $(node -v) '==' 'v12.0.0' ] ) && node --experimental-modules lib/test-esm.mjs || echo 'not running esm fs test'",
     "build-test": "npm run build && npm run test",
     "regenerate": "node --experimental-modules lib/regenerate.mjs"
