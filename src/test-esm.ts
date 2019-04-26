@@ -1,13 +1,17 @@
 import { parse } from "./parse";
-// shim until promises becomes an export of fs
-import { readdirSync as read_dir, readFileSync as read_file} from 'fs';
-import { join as path_join, basename } from 'path';
+import { promises as fs }  from 'fs';
+const { readdir: read_dir, readFile: read_file } = fs
+import { basename } from 'path';
 import { Schema } from "./schema";
 import {deepStrictEqual as deep_strict_equal, rejects} from 'assert'
 
-const fixture = (p: string) => path_join('test/fixtures', basename(p))
-const rjson = async (p: string) => JSON.parse(await read_file(p, 'utf8'))
-const rpbuf = async (p: string) => parse(await read_file(p, 'utf8'))
+const fixture = (p: string) => new URL(
+	`../test/fixtures/${basename(p)}`,
+	//@ts-ignore
+	import.meta!.url!
+)
+const rjson = async (p: URL) => JSON.parse(await read_file(p, 'utf8'))
+const rpbuf = async (p: URL) => parse(await read_file(p, 'utf8'))
 const fixtures = async (p: string) => {
 	const json = rjson(fixture(p + '.json'))
 	const schema = rpbuf(fixture(p + '.proto'))
