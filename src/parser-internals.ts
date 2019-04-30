@@ -11,9 +11,23 @@ export interface LookupIn<T extends keyof LookupIs> {
 }
 export type Lookup = LookupIn<keyof LookupIs>[];
 const MAX_RANGE = 0x1F_FF_FF_FF;
-
-// "Only repeated fields of primitive numeric types (types which use the varint, 32-bit, or 64-bit wire types) can be declared "packed"."
-export const PACKABLE_TYPES = Object.freeze([
+export type Primitive =
+	'int64' | 'uint64' | 'sint64' |
+	'int32' | 'uint32' | 'sint32' |
+	'bool' |
+	'fixed64'| 'sfixed64'| 'double' |
+	'fixed32'| 'sfixed32'| 'float' |
+	'string' | 'bytes';
+export const PRIMITIVE_TYPES: ReadonlySet<string> = new Set([
+	'int32', 'int64',
+	'uint32', 'uint64',
+	'sint32', 'sint64',
+	'bool',
+	'fixed64', 'sfixed64', 'double',
+	'fixed32', 'sfixed32', 'float',
+	'string' , 'bytes']);
+/** "Only repeated fields of primitive numeric types (types which use the varint, 32-bit, or 64-bit wire types) can be declared "packed"." */
+export const PACKABLE_TYPES: ReadonlySet<string> = new Set([
 	// varint wire types
 	'int32', 'int64', 'uint32', 'uint64', 'sint32', 'sint64', 'bool',
 	// + ENUMS
@@ -22,7 +36,8 @@ export const PACKABLE_TYPES = Object.freeze([
 	// 32-bit wire types
 	'fixed32', 'sfixed32', 'float'
 ])
-export const MAP_KEY_TYPES = Object.freeze([
+/** Only integer and string types may be used as map key types */
+export const MAP_KEY_TYPES: ReadonlySet<string> = new Set([
 	// varint wire types
 	'int32', 'int64', 'uint32', 'uint64', 'sint32', 'sint64', 'bool',
 	// + ENUMS
@@ -119,7 +134,14 @@ export class Options {
 		return {...j, options: this.options_as_object()}
 	}
 }
+const message_types = new WeakMap<MessageField, Enum | Message>()
 export class MessageField extends Options {
+	get type_ref() { return message_types.get(this)! }
+	set type_ref(v: Enum | Message) {
+		if (PRIMITIVE_TYPES.has(this.type)) throw new SyntaxError('May not reference a primitive type on a MessageField')
+		if (message_types.has(this)) throw new ReferenceError('May not reference more than one type on a MessageField')
+		message_types.set(this, v)
+	}
 	name = '';
 	type = '';
 	tag = -1;
@@ -319,7 +341,6 @@ export class EnumValue extends Options {
 	constructor(public name: string, public value: number) {super()}
 }
 export class Enum extends Options {
-	enums: Enum[] = [];
 	values: EnumValue[] = [];
 	allow_alias: boolean = false;
 	constructor(public name: string) {super()}

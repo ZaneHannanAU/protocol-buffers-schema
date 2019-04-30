@@ -9,7 +9,6 @@
       "enums": [
         {
           "name": "PhoneType",
-          "enums": [],
           "values": [
             {
               "name": "MOBILE",

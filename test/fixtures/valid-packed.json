@@ -9,7 +9,6 @@
       "enums": [
         {
           "name": "E",
-          "enums": [],
           "values": [
             {
               "name": "A",
@@ -37,7 +36,6 @@
       "enums": [
         {
           "name": "Corpus",
-          "enums": [],
           "values": [
             {
               "name": "UNIVERSAL",

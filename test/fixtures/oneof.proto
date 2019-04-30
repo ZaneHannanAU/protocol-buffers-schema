@@ -1,3 +1,4 @@
+message SubMessage {}
 message SampleMessage {
   oneof test_oneof {
      string name = 4;

@@ -10,8 +10,12 @@ export interface LookupIn<T extends keyof LookupIs> {
     value: LookupIs[T];
 }
 export declare type Lookup = LookupIn<keyof LookupIs>[];
-export declare const PACKABLE_TYPES: readonly string[];
-export declare const MAP_KEY_TYPES: readonly string[];
+export declare type Primitive = 'int64' | 'uint64' | 'sint64' | 'int32' | 'uint32' | 'sint32' | 'bool' | 'fixed64' | 'sfixed64' | 'double' | 'fixed32' | 'sfixed32' | 'float' | 'string' | 'bytes';
+export declare const PRIMITIVE_TYPES: ReadonlySet<string>;
+/** "Only repeated fields of primitive numeric types (types which use the varint, 32-bit, or 64-bit wire types) can be declared "packed"." */
+export declare const PACKABLE_TYPES: ReadonlySet<string>;
+/** Only integer and string types may be used as map key types */
+export declare const MAP_KEY_TYPES: ReadonlySet<string>;
 export declare type NameMappedValueMap = Map<string, string>;
 export interface OptionsJSON {
     [s: string]: string | OptionsJSON;
@@ -28,6 +32,7 @@ export declare class Options {
     toJSON(): any;
 }
 export declare class MessageField extends Options {
+    type_ref: Enum | Message;
     name: string;
     type: string;
     tag: number;
@@ -52,7 +57,6 @@ export declare class EnumValue extends Options {
 }
 export declare class Enum extends Options {
     name: string;
-    enums: Enum[];
     values: EnumValue[];
     allow_alias: boolean;
     constructor(name: string);

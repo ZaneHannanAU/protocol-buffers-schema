@@ -5,6 +5,15 @@
   "enums": [],
   "messages": [
     {
+      "name": "SubMessage",
+      "enums": [],
+      "extends": [],
+      "messages": [],
+      "fields": [],
+      "extensions": null,
+      "options": {}
+    },
+    {
       "name": "SampleMessage",
       "enums": [],
       "extends": [],
