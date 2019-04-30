@@ -1,6 +1,6 @@
 {
   "name": "protocol-buffers-schema-ts",
-  "version": "4.5.1",
+  "version": "4.6.0",
   "description": "No nonsense protocol buffers schema parser written in Typescript",
   "type": "module",
   "types": "lib/parse",
